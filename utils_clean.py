@@ -73,7 +73,7 @@ def findArea(img):
     """
     
     # Reusing findFace for getting the area
-    _, info = findFace(img)
+    info = findFace(img)
     return info[1] if info else 0
 
 def trackFace(myDrone, info, w, pid_yaw, pid_fb, pError_yaw, pError_fb, facearea, h, pError_ud, pid_ud, center, desiredfacearea):
@@ -88,18 +88,20 @@ def trackFace(myDrone, info, w, pid_yaw, pid_fb, pError_yaw, pError_fb, facearea
     if len(info) < 2:
         return pError_yaw, pError_fb, pError_ud
     
-    error_yaw = info[0][0] - center                                             # error for yaw
-    speed_yaw = pid_yaw[0] * error_yaw + pid_yaw[1] * (error_yaw - pError_yaw)  # PID values for yaw
-    speed_yaw = int(np.clip(speed_yaw, -60, 60))                                # clip the speed
+    # PID values for yaw
+    error_yaw = info[0][0] - center                                                                                     # error for yaw
+    speed_yaw = pid_yaw[0] * error_yaw + pid_yaw[1] * (error_yaw - pError_yaw) + pid_yaw[2] * (error_yaw + pError_yaw)  # PID values for yaw
+    speed_yaw = int(np.clip(speed_yaw, -60, 60))                                                                        # constrain yaw speed
     
-    error_fb = facearea - desiredfacearea                                       # error for forward-backward
-    speed_fb = pid_fb[0] * error_fb + pid_fb[1] * (error_fb - pError_fb)        # PD values for forward-backward
-    speed_fb = int(np.clip(speed_fb, -20, 20))
+    # PID values for forward-backward
+    error_fb = facearea - desiredfacearea                                                                               # error for forward-backward
+    speed_fb = pid_fb[0] * error_fb + pid_fb[1] * (error_fb - pError_fb) + pid_fb[2] * (error_fb + pError_fb)           # PD values for forward-backward
+    speed_fb = int(np.clip(speed_fb, -20, 20))                                                                          # constrain forward-backward speed
 
     # PID values for up-down
-    error_ud = info[0][1] - h // 2
-    speed_ud = pid_ud[0] * error_ud + pid_ud[1] * (error_ud - pError_ud)
-    speed_ud = int(np.clip(speed_ud, -25, 25))
+    error_ud = info[0][1] - h // 2                                                                                      # error for up-down
+    speed_ud = pid_ud[0] * error_ud + pid_ud[1] * (error_ud - pError_ud)  + pid_ud[2] * (error_ud + pError_ud)          # PD values for up-down
+    speed_ud = int(np.clip(speed_ud, -25, 25))                                                                          # constrain up-down speed
     
     # Update previous errors
     print(speed_yaw, speed_fb, speed_ud)
